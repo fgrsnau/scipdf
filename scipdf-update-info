@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+
+
+def embed_pdfinfo(filename, title, author, date):
+    text = []
+
+    def add_info(key, value):
+        if value is not None:
+            text.append(f'InfoBegin')
+            text.append(f'InfoKey: {key}')
+            text.append(f'InfoValue: {value}')
+
+    add_info('Title', title)
+    add_info('Author', author)
+    add_info('CreationDate', date)
+
+    subprocess.run(['pdftk', filename, 'update_info_utf8', '-', 'output', filename + '.new'],
+                   input='\n'.join(text),
+                   text=True,
+                   check=True)
+
+    os.rename(filename + '.new', filename)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Update /pdfinfo object')
+    parser.add_argument('--title', '-t', metavar='TITLE')
+    parser.add_argument('--author', '-a', metavar='AUTHOR')
+    parser.add_argument('--date', '-d', metavar='DATE')
+    parser.add_argument('pdf_file')
+    args = parser.parse_args()
+
+    embed_pdfinfo(args.pdf_file, args.title, args.author, args.date)

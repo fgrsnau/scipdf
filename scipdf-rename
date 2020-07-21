@@ -1,0 +1,21 @@
+#!/bin/bash
+set -eu -o pipefail
+
+die() {
+	echo "$@" >&2
+	exit 1
+}
+
+orig_filename="$1"
+shift
+
+title=$(pdfinfo "${orig_filename}" | sed -rne 's/^Title: +([^ ].*)$/\1/p')
+author=$(pdfinfo "${orig_filename}" | sed -rne 's/^Author: +([^ ].*)$/\1/p' | sed -re 's/, /\n/g' | head -n10 | awk '{ORS=", "; print $NF}' | sed -re 's/, $//')
+year=$(pdfinfo -isodates "${orig_filename}" | sed -rne 's/^CreationDate: +([0-9]+).*$/\1/p')
+
+[[ -n "${title}" ]]  || die "Could not find title!"
+[[ -n "${author}" ]] || die "Could not find author!"
+[[ -n "${year}" ]]   || die "Could not find year!"
+
+new_filename="$(dirname "${orig_filename}")/${year} - ${author} - ${title}.pdf"
+mv --no-clobber -v "${orig_filename}" "${new_filename}"
